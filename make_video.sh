@@ -1,6 +1,6 @@
 #!/bin/bash
 # One topic -> one finished reel + upload kit.
-#   bash make_video.sh "What if the Moon disappeared?" [style=tall-tale] [voice=am_fenrir]
+#   bash make_video.sh "What If Google Maps Suddenly Stopped Working Worldwide?" [style=tall-tale] [voice=am_fenrir]
 # Env: GITHUB_TOKEN (GitHub Models; without it the offline template is used), VG_MODEL, OFFLINE=1,
 #      PAR (parallel render chunks, default 3), FPS (default 24), QS (render quality, default software-GL settings).
 # Output: out/<slug>.mp4, out/<slug> - Upload Package/, out/<slug>-project.tgz (script, timing, plan, shots, sheet)
