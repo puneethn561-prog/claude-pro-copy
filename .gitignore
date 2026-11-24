@@ -1,0 +1,7 @@
+work/
+out/
+*.mp4
+*.wav
+.faceless-home/
+.hf-cache/
+__pycache__/

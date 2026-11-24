@@ -1,0 +1,145 @@
+name: Generate video
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Topic (e.g. What if the Moon disappeared?)"
+        required: true
+        default: "What if the Moon disappeared?"
+      style:
+        description: "Style (tall-tale is the one with the LLM director)"
+        required: false
+        default: "tall-tale"
+      voice:
+        description: "Kokoro voice"
+        required: false
+        default: "am_fenrir"
+      model:
+        description: "GitHub Models model id"
+        required: false
+        default: "openai/gpt-4.1-mini"
+      drive_folder_id:
+        description: "Google Drive folder for the upload kit"
+        required: false
+        default: "1iysmlIFQfa1Ci3ilmfyqLP8cTOdTP07Z"
+  push:
+    branches: [main]
+    paths: [topics.txt]
+
+permissions:
+  contents: write
+  models: read
+
+concurrency:
+  group: generate-video-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  topics:
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.pick.outputs.list }}
+      any: ${{ steps.pick.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          TOPIC: ${{ github.event.inputs.topic }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          if os.environ['EVENT'] == 'workflow_dispatch':
+              todo = [os.environ['TOPIC'].strip()]
+          else:
+              done = set(json.load(open('state/done.json'))) if os.path.exists('state/done.json') else set()
+              lines = [l.strip() for l in open('topics.txt', encoding='utf-8') if l.strip() and not l.strip().startswith('#')]
+              todo = [l for l in lines if l not in done][:3]          # max 3 new topics per run
+          print('topics:', todo)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('list=' + json.dumps(todo) + '\n'); f.write('any=' + ('true' if todo else 'false') + '\n')
+          PY
+
+  render:
+    needs: topics
+    if: needs.topics.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        topic: ${{ fromJson(needs.topics.outputs.list) }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VG_MODEL: ${{ github.event.inputs.model || 'openai/gpt-4.1-mini' }}
+      FACELESS_HOME: ${{ github.workspace }}/.faceless-home
+      HF_HOME: ${{ github.workspace }}/.hf-cache
+      CHROME: /usr/bin/google-chrome
+      PAR: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - name: Install ffmpeg + Python deps
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          pip install -q -r requirements.txt
+          which google-chrome && google-chrome --version
+      - name: Cache voice + whisper models
+        uses: actions/cache@v4
+        with:
+          path: |
+            .faceless-home/kokoro
+            .hf-cache
+          key: models-kokoro-v1.0-whisper-small.en-v1
+      - name: Unit tests
+        run: python -m pytest -q tests
+      - name: Make the video
+        run: bash make_video.sh "${{ matrix.topic }}" "${{ github.event.inputs.style || 'tall-tale' }}" "${{ github.event.inputs.voice || 'am_fenrir' }}"
+      - name: Names
+        id: n
+        run: echo "slug=$(cat out/LAST)" >> "$GITHUB_OUTPUT"
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ steps.n.outputs.slug }}
+          path: out/${{ steps.n.outputs.slug }}.mp4
+          compression-level: 0
+      - name: Upload kit + project artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kit-${{ steps.n.outputs.slug }}
+          path: |
+            out/*Upload Package*/
+            out/${{ steps.n.outputs.slug }}-project.tgz
+      - name: Upload kit to Google Drive (optional)
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+          DRIVE_FOLDER_ID: ${{ github.event.inputs.drive_folder_id || vars.DRIVE_FOLDER_ID || '1iysmlIFQfa1Ci3ilmfyqLP8cTOdTP07Z' }}
+        run: |
+          for k in out/*"Upload Package"; do python generator/drive_upload.py "$k"; done
+
+  mark-done:
+    needs: [topics, render]
+    if: github.event_name == 'push' && needs.topics.outputs.any == 'true' && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          LIST: ${{ needs.topics.outputs.list }}
+          RESULT: ${{ needs.render.result }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          p = 'state/done.json'; done = json.load(open(p)) if os.path.exists(p) else []
+          if os.environ['RESULT'] == 'success':
+              done += [t for t in json.loads(os.environ['LIST']) if t not in done]
+          json.dump(done, open(p, 'w'), indent=1)
+          PY
+          git config user.name "github-actions[bot]"; git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add state/done.json; git diff --cached --quiet || (git commit -m "state: mark topics done [skip ci]" && git push)

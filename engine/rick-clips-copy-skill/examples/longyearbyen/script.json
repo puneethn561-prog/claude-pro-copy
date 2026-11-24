@@ -1,0 +1,65 @@
+{
+  "title": "The Town Where You're Not Allowed to Die",
+  "voice": "am_fenrir",
+  "speed": 1.12,
+  "lead": 0.3,
+  "outro": 1.2,
+  "gap": 0.18,
+  "music": "bounce",
+  "sources": [
+    "Visit Svalbard FAQ: not illegal to die; coffin burials not permitted; permafrost affects decomposition and freeze-thaw slowly pushes coffins upward",
+    "Polar Journal 2020: Longyearbyen cemetery used for coffin burials 1918-1950, including seven Spanish flu victims; afterwards the deceased taken to the mainland",
+    "Mental Floss / IFLScience 2018: no law against dying; small hospital, seriously ill sent to mainland Norway",
+    "Norway Today 2020 / Shared Histories Canada: 1997-98 exhumation of 1918 flu victims in Longyearbyen; virus traces found"
+  ],
+  "lines": [
+    {
+      "text": "There's a town in the Arctic where people say dying is against the law."
+    },
+    {
+      "text": "Olaf lives in Longyearbyen, and one morning he wakes up feeling awful."
+    },
+    {
+      "text": "So he walks into the tiny hospital,"
+    },
+    {
+      "text": "and the doctor just hands him a plane ticket."
+    },
+    {
+      "text": "I'm sick, not going on holiday!"
+    },
+    {
+      "text": "Exactly. You can't stay here."
+    },
+    {
+      "text": "So Olaf storms up to the cemetery to prove her wrong,"
+    },
+    {
+      "text": "but the newest grave is from nineteen fifty,",
+      "caps": "but | the newest | grave | is from | 1950,"
+    },
+    {
+      "text": "and the old coffins are creeping up out of the ground."
+    },
+    {
+      "text": "So what's going on?"
+    },
+    {
+      "text": "Well, the town sits on permafrost, so bodies here don't rot. They freeze."
+    },
+    {
+      "text": "Scientists even found traces of the nineteen eighteen flu still inside them.",
+      "caps": "Scientists | even found | traces | of the | 1918 | flu | still | inside them."
+    },
+    {
+      "text": "And every summer the ground thaws and refreezes, pushing coffins back up."
+    },
+    {
+      "text": "So dying was never illegal. There's just no ground that will keep you."
+    },
+    {
+      "text": "Olaf grabs the ticket. Fine. But I'm coming back alive.",
+      "gap": 0.3
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# One topic per line. Push a change to this file and "Generate video" makes a reel for each NEW line (max 3 per push).
+# Lines starting with # are ignored. Finished topics are listed in state/done.json.
